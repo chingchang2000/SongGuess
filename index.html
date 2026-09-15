@@ -48,6 +48,18 @@
     const BANNED_NAMES=['fuck','fucker','shit','bitch','cunt','nigger','nigga','nazi','hitler','rape','pedo','dick','cock','pussy','luder','hore','fisse','pik','røv','mongol','perker','neger','admin','moderator','beatblink','http','www'];
     let username=localStorage.getItem('beatblink-username')||'';
     audio.volume=1; audio.muted=false;
+    function installTamperGuards(){
+      const protectedGlobals={
+        score:{get:()=>score,set:()=>refreshStateUi()},current:{get:()=>null,set:()=>{}},round:{get:()=>round,set:()=>refreshStateUi()},
+        reveal:{value:undefined},nextTrack:{value:undefined},miss:{value:undefined},playClip:{value:undefined},stopTimer:{value:undefined},LEVELS:{value:undefined},
+        _bbHack:{value:Object.freeze({})},_bbOriginalReveal:{value:undefined},_bbOriginalNextTrack:{value:undefined},_bbOriginalMiss:{value:undefined},_bbOriginalPlayClip:{value:undefined}
+      };
+      for(const [name,descriptor] of Object.entries(protectedGlobals)){try{const locked={...descriptor,configurable:false,enumerable:false};if('value'in descriptor)locked.writable=false;Object.defineProperty(window,name,locked)}catch{}}
+      const observer=new MutationObserver(()=>{const injected=document.getElementById('bb-mega-menu');if(injected)injected.remove();refreshStateUi()});
+      observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+      audio.addEventListener('ratechange',()=>{if(audio.playbackRate!==1)audio.playbackRate=1});
+    }
+    function refreshStateUi(){const expectedScore=String(score),expectedRound=String(round),expectedLevel=LEVELS[Math.min(4,Math.floor((round-1)/2))],expectedProgress=`${round*10}%`;if($('navScore').textContent!==expectedScore)$('navScore').textContent=expectedScore;if($('round').textContent!==expectedRound)$('round').textContent=expectedRound;if($('level').textContent!==expectedLevel)$('level').textContent=expectedLevel;if($('progress').style.width!==expectedProgress)$('progress').style.width=expectedProgress}
     function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9æøå ]/g,'').replace(/\s+/g,' ').trim()}
     function shuffle(a){for(let i=a.length-1;i;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
     function activeDurations(){const level=Math.min(4,Math.floor((round-1)/2));return level===0?EASY_DURATIONS:level===1?MEDIUM_DURATIONS:DURATIONS}
@@ -87,7 +99,7 @@
     function fail(e){$('subtitle').textContent=e.message||'Kunne ikke hente musik';$('listen').disabled=true;toast('Tryk Nyt spil for at prøve igen')}
     document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));$('filters').classList.toggle('disabled',mode==='random')});
     $('artistChoice').onchange=()=>{const custom=$('artistChoice').value==='custom';$('artist').classList.toggle('hidden',!custom);if(custom)$('artist').focus();else $('artist').value=''};
-    $('heroStart').onclick=()=>{if(!username||validateUsername(username)){openUsername();return}$('game').classList.add('open');$('game').scrollIntoView({behavior:'smooth'});fetchSongs()};$('newGame').onclick=()=>{if(!username||validateUsername(username)){openUsername();return}round=1;score=0;roundPoints.length=0;$('navScore').textContent=0;tracks=[];fetchSongs()};$('listen').onclick=playClip;$('submit').onclick=()=>{if(!current||locked)return;isCorrect($('guess').value)?reveal(true):miss(false)};$('skip').onclick=()=>miss(true);$('guess').oninput=renderSuggestions;$('guess').onkeydown=e=>{if(e.key==='Enter'){$('submit').click()}if(e.key==='Escape')hideSuggestions()};document.addEventListener('click',e=>{if(!e.target.closest('.guess-box'))hideSuggestions()});$('usernameForm').onsubmit=saveUsername;$('userButton').onclick=openUsername;$('leaderboardBtn').onclick=()=>{$('leaderboard').scrollIntoView({behavior:'smooth'});loadLeaderboard()};$('refreshBoard').onclick=loadLeaderboard;if(validateUsername(username)){username='';localStorage.removeItem('beatblink-username');openUsername()}else $('navUser').textContent=username;loadLeaderboard();renderSteps();
+    $('heroStart').onclick=()=>{if(!username||validateUsername(username)){openUsername();return}$('game').classList.add('open');$('game').scrollIntoView({behavior:'smooth'});fetchSongs()};$('newGame').onclick=()=>{if(!username||validateUsername(username)){openUsername();return}round=1;score=0;roundPoints.length=0;$('navScore').textContent=0;tracks=[];fetchSongs()};$('listen').onclick=playClip;$('submit').onclick=()=>{if(!current||locked)return;isCorrect($('guess').value)?reveal(true):miss(false)};$('skip').onclick=()=>miss(true);$('guess').oninput=renderSuggestions;$('guess').onkeydown=e=>{if(e.key==='Enter'){$('submit').click()}if(e.key==='Escape')hideSuggestions()};document.addEventListener('click',e=>{if(!e.target.closest('.guess-box'))hideSuggestions()});$('usernameForm').onsubmit=saveUsername;$('userButton').onclick=openUsername;$('leaderboardBtn').onclick=()=>{$('leaderboard').scrollIntoView({behavior:'smooth'});loadLeaderboard()};$('refreshBoard').onclick=loadLeaderboard;if(validateUsername(username)){username='';localStorage.removeItem('beatblink-username');openUsername()}else $('navUser').textContent=username;installTamperGuards();loadLeaderboard();renderSteps();refreshStateUi();
   </script>
 </body>
 </html>
